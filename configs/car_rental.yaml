@@ -1,0 +1,129 @@
+strategy:
+  id: car_rental
+  name: Car rental
+  description: Illustrative business policy; all attributes and rules are configurable.
+  unit: rental booking
+  currency: INR
+  output_type: money
+  attributes:
+  - key: rental_days
+    label: Rental days
+    type: integer
+    default: 8
+    minimum: 1
+    maximum: 90
+  - key: vehicle
+    label: Vehicle category
+    type: category
+    default: SUV
+    options:
+    - SUV
+    - Sedan
+    - Hatchback
+  - key: pickup
+    label: Pickup location
+    type: category
+    default: Airport
+    options:
+    - Airport
+    - City
+  - key: member
+    label: Premium member
+    type: boolean
+    default: false
+  base:
+    op: multiply
+    args:
+    - op: field
+      field: base_rate
+    - op: field
+      field: rental_days
+  rules:
+  - id: weekly_suv
+    name: Weekly SUV discount
+    priority: 10
+    when:
+      op: all
+      children:
+      - op: gte
+        field: rental_days
+        value: 7
+      - op: eq
+        field: vehicle
+        value: SUV
+    action:
+      type: percent
+      value:
+        op: const
+        value: '-10'
+      basis: base_amount
+    exclusive_group: duration_offer
+  - id: member_offer
+    name: Member discount
+    priority: 20
+    when:
+      op: eq
+      field: member
+      value: true
+    action:
+      type: percent
+      value:
+        op: const
+        value: '-5'
+      basis: base_amount
+    exclusive_group: duration_offer
+  - id: airport_pickup
+    name: Airport pickup charge
+    priority: 30
+    when:
+      op: eq
+      field: pickup
+      value: Airport
+    action:
+      type: add
+      value:
+        op: const
+        value: '500'
+      basis: subtotal
+    exclusive_group: null
+  constraints:
+    minimum:
+      op: multiply
+      args:
+      - op: const
+        value: '1500'
+      - op: field
+        field: rental_days
+    maximum: null
+    round_to: '1'
+  scenarios:
+  - name: Weekly SUV airport rental
+    base_rate: '2000'
+    context:
+      rental_days: 8
+      vehicle: SUV
+      pickup: Airport
+      member: false
+    expected_price: '14900'
+  - name: Short city rental
+    base_rate: '2000'
+    context:
+      rental_days: 3
+      vehicle: SUV
+      pickup: City
+      member: false
+    expected_price: '6000'
+  - name: Exclusive discount winner
+    base_rate: '2000'
+    context:
+      rental_days: 8
+      vehicle: SUV
+      pickup: Airport
+      member: true
+    expected_price: '14900'
+products:
+- id: car_rental_standard
+  name: "Car rental \u2014 Standard"
+  strategy_id: car_rental
+  base_rate: '2000'
+  defaults: {}

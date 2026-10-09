@@ -1,0 +1,95 @@
+strategy:
+  id: rate_demo
+  name: Rate demonstration
+  description: Illustrative business policy; all attributes and rules are configurable.
+  unit: annual percentage rate
+  currency: INR
+  output_type: rate
+  attributes:
+  - key: risk_band
+    label: Risk band (illustrative)
+    type: category
+    default: low
+    options:
+    - low
+    - medium
+    - high
+  - key: tenure_months
+    label: Tenure in months
+    type: integer
+    default: 36
+    minimum: 6
+    maximum: 120
+  base:
+    op: field
+    field: base_rate
+  rules:
+  - id: low_risk
+    name: Low-risk adjustment
+    priority: 10
+    when:
+      op: eq
+      field: risk_band
+      value: low
+    action:
+      type: basis_points
+      value:
+        op: const
+        value: '-25'
+      basis: subtotal
+    exclusive_group: null
+  - id: high_risk
+    name: High-risk adjustment
+    priority: 20
+    when:
+      op: eq
+      field: risk_band
+      value: high
+    action:
+      type: basis_points
+      value:
+        op: const
+        value: '75'
+      basis: subtotal
+    exclusive_group: null
+  - id: long_tenure
+    name: Long-tenure adjustment
+    priority: 30
+    when:
+      op: gt
+      field: tenure_months
+      value: 60
+    action:
+      type: basis_points
+      value:
+        op: const
+        value: '25'
+      basis: subtotal
+    exclusive_group: null
+  constraints:
+    minimum:
+      op: const
+      value: '6'
+    maximum:
+      op: const
+      value: '24'
+    round_to: '0.01'
+  scenarios:
+  - name: Low-risk illustration
+    base_rate: '9.5'
+    context:
+      risk_band: low
+      tenure_months: 36
+    expected_price: '9.25'
+  - name: High-risk long tenure
+    base_rate: '9.5'
+    context:
+      risk_band: high
+      tenure_months: 72
+    expected_price: '10.5'
+products:
+- id: rate_demo_standard
+  name: "Rate demonstration \u2014 Standard"
+  strategy_id: rate_demo
+  base_rate: '9.5'
+  defaults: {}

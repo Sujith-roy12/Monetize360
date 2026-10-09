@@ -1,0 +1,27 @@
+{
+  "id": "logistics",
+  "name": "Logistics delivery",
+  "description": "Unseeded example for configuration-only domain onboarding.",
+  "output_type": "money",
+  "currency": "INR",
+  "unit": "delivery",
+  "attributes": [
+    {"key": "distance_km", "label": "Distance (km)", "type": "number", "default": 50, "minimum": 1, "maximum": 500},
+    {"key": "weight_kg", "label": "Weight (kg)", "type": "number", "default": 20, "minimum": 0.1, "maximum": 500},
+    {"key": "urgent", "label": "Urgent delivery", "type": "boolean", "default": true}
+  ],
+  "base": {"op": "multiply", "args": [{"op": "field", "field": "base_rate"}, {"op": "field", "field": "distance_km"}]},
+  "rules": [
+    {"id": "heavy_load", "name": "Heavy load surcharge", "priority": 10,
+     "when": {"op": "gte", "field": "weight_kg", "value": 20},
+     "action": {"type": "percent", "basis": "base_amount", "value": {"op": "const", "value": "25"}}},
+    {"id": "urgent_delivery", "name": "Urgency charge", "priority": 20,
+     "when": {"op": "eq", "field": "urgent", "value": true},
+     "action": {"type": "add", "value": {"op": "const", "value": "300"}}}
+  ],
+  "constraints": {"minimum": {"op": "const", "value": "500"}, "maximum": {"op": "const", "value": "10000"}, "round_to": "1"},
+  "scenarios": [
+    {"name": "Heavy urgent delivery", "base_rate": "20", "context": {"distance_km": 50, "weight_kg": 20, "urgent": true}, "expected_price": "1550"},
+    {"name": "Standard delivery", "base_rate": "20", "context": {"distance_km": 50, "weight_kg": 10, "urgent": false}, "expected_price": "1000"}
+  ]
+}

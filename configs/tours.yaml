@@ -1,0 +1,131 @@
+strategy:
+  id: tours
+  name: Tour operator
+  description: Illustrative business policy; all attributes and rules are configurable.
+  unit: group booking
+  currency: INR
+  output_type: money
+  attributes:
+  - key: people
+    label: Travellers
+    type: integer
+    default: 10
+    minimum: 1
+    maximum: 100
+  - key: package
+    label: Package type
+    type: category
+    default: premium
+    options:
+    - standard
+    - premium
+  - key: private_guide
+    label: Private guide
+    type: boolean
+    default: false
+  base:
+    op: multiply
+    args:
+    - op: field
+      field: base_rate
+    - op: field
+      field: people
+  rules:
+  - id: large_group
+    name: Large-group discount
+    priority: 10
+    when:
+      op: gte
+      field: people
+      value: 20
+    action:
+      type: percent
+      value:
+        op: const
+        value: '-12'
+      basis: base_amount
+    exclusive_group: group_discount
+  - id: group_discount
+    name: Group discount
+    priority: 20
+    when:
+      op: gte
+      field: people
+      value: 10
+    action:
+      type: percent
+      value:
+        op: const
+        value: '-8'
+      basis: base_amount
+    exclusive_group: group_discount
+  - id: premium_package
+    name: Premium package extras
+    priority: 30
+    when:
+      op: eq
+      field: package
+      value: premium
+    action:
+      type: add
+      value:
+        op: multiply
+        args:
+        - op: const
+          value: '500'
+        - op: field
+          field: people
+      basis: subtotal
+    exclusive_group: null
+  - id: private_guide
+    name: Private guide charge
+    priority: 40
+    when:
+      op: eq
+      field: private_guide
+      value: true
+    action:
+      type: add
+      value:
+        op: const
+        value: '1500'
+      basis: subtotal
+    exclusive_group: null
+  constraints:
+    minimum:
+      op: multiply
+      args:
+      - op: const
+        value: '1500'
+      - op: field
+        field: people
+    maximum: null
+    round_to: '1'
+  scenarios:
+  - name: Premium group of ten
+    base_rate: '2500'
+    context:
+      people: 10
+      package: premium
+      private_guide: false
+    expected_price: '28000'
+  - name: Small standard group
+    base_rate: '2500'
+    context:
+      people: 4
+      package: standard
+      private_guide: false
+    expected_price: '10000'
+  - name: Twenty-person tier
+    base_rate: '2500'
+    context:
+      people: 20
+      package: standard
+      private_guide: false
+    expected_price: '44000'
+products:
+- id: tours_standard
+  name: "Tour operator \u2014 Standard"
+  strategy_id: tours
+  base_rate: '2500'
+  defaults: {}

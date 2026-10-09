@@ -1,0 +1,131 @@
+strategy:
+  id: hospitality
+  name: Hospitality
+  description: Illustrative business policy; all attributes and rules are configurable.
+  unit: stay
+  currency: INR
+  output_type: money
+  attributes:
+  - key: nights
+    label: Number of nights
+    type: integer
+    default: 2
+    minimum: 1
+    maximum: 90
+  - key: occupancy
+    label: Occupancy percentage
+    type: number
+    default: 90
+    minimum: 0
+    maximum: 100
+  - key: member
+    label: Loyalty member
+    type: boolean
+    default: true
+  - key: arrival
+    label: Arrival date
+    type: date
+    default: '2026-10-15'
+  base:
+    op: multiply
+    args:
+    - op: field
+      field: base_rate
+    - op: field
+      field: nights
+  rules:
+  - id: high_occupancy
+    name: High occupancy adjustment
+    priority: 10
+    when:
+      op: gte
+      field: occupancy
+      value: 85
+    action:
+      type: percent
+      value:
+        op: const
+        value: '20'
+      basis: base_amount
+    exclusive_group: null
+  - id: member_discount
+    name: Loyalty discount
+    priority: 20
+    when:
+      op: eq
+      field: member
+      value: true
+    action:
+      type: percent
+      value:
+        op: const
+        value: '-10'
+      basis: subtotal
+    exclusive_group: null
+  - id: year_end
+    name: Year-end adjustment
+    priority: 30
+    when:
+      op: between
+      field: arrival
+      value:
+      - '2026-12-24'
+      - '2027-01-02'
+    action:
+      type: add
+      value:
+        op: multiply
+        args:
+        - op: const
+          value: '500'
+        - op: field
+          field: nights
+      basis: subtotal
+    exclusive_group: null
+  constraints:
+    minimum:
+      op: multiply
+      args:
+      - op: const
+        value: '1500'
+      - op: field
+        field: nights
+    maximum:
+      op: multiply
+      args:
+      - op: const
+        value: '10000'
+      - op: field
+        field: nights
+    round_to: '1'
+  scenarios:
+  - name: Busy period, loyalty member
+    base_rate: '3000'
+    context:
+      nights: 2
+      occupancy: 90
+      member: true
+      arrival: '2026-10-15'
+    expected_price: '6480'
+  - name: Normal occupancy, no loyalty
+    base_rate: '3000'
+    context:
+      nights: 2
+      occupancy: 50
+      member: false
+      arrival: '2026-10-15'
+    expected_price: '6000'
+  - name: Year-end booking
+    base_rate: '3000'
+    context:
+      nights: 2
+      occupancy: 90
+      member: true
+      arrival: '2026-12-25'
+    expected_price: '7480'
+products:
+- id: hospitality_standard
+  name: "Hospitality \u2014 Standard"
+  strategy_id: hospitality
+  base_rate: '3000'
+  defaults: {}
